@@ -265,83 +265,12 @@ export function ContractInteraction() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Add Asset</CardTitle>
+                  <CardTitle>Trust Management</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="assetDescription">Asset Description</Label>
-                    <Input
-                      id="assetDescription"
-                      value={trustData.assetDescription}
-                      onChange={(e) => setTrustData({...trustData, assetDescription: e.target.value})}
-                      placeholder="e.g., Bitcoin, Real Estate, etc."
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="assetValue">Asset Value</Label>
-                    <Input
-                      id="assetValue"
-                      type="number"
-                      value={trustData.assetValue}
-                      onChange={(e) => setTrustData({...trustData, assetValue: Number(e.target.value)})}
-                      placeholder="Enter asset value"
-                    />
-                  </div>
-                  <Button onClick={handleAddAsset} disabled={!selectedTrust}>Add Asset</Button>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Add Beneficiary</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="beneficiaryAddress">Beneficiary Address</Label>
-                    <Input
-                      id="beneficiaryAddress"
-                      value={trustData.beneficiaryAddress}
-                      onChange={(e) => setTrustData({...trustData, beneficiaryAddress: e.target.value})}
-                      placeholder="0x..."
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="beneficiaryName">Beneficiary Name</Label>
-                    <Input
-                      id="beneficiaryName"
-                      value={trustData.beneficiaryName}
-                      onChange={(e) => setTrustData({...trustData, beneficiaryName: e.target.value})}
-                      placeholder="Enter beneficiary name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="sharePercentage">Share Percentage</Label>
-                    <Input
-                      id="sharePercentage"
-                      type="number"
-                      value={trustData.sharePercentage}
-                      onChange={(e) => setTrustData({...trustData, sharePercentage: Number(e.target.value)})}
-                      placeholder="Enter share percentage"
-                    />
-                  </div>
-                  <Button onClick={handleAddBeneficiary} disabled={!selectedTrust}>Add Beneficiary</Button>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Contract Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Asset Count</Label>
-                    <div className="text-2xl font-bold">{contractInfo.assetCount}</div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Beneficiary Count</Label>
-                    <div className="text-2xl font-bold">{contractInfo.beneficiaryCount}</div>
-                  </div>
-                  <Button onClick={refreshContractInfo} disabled={!selectedTrust}>Refresh Info</Button>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Management functions for these trusts are not available in this interface.
+                  </p>
                 </CardContent>
               </Card>
             </div>

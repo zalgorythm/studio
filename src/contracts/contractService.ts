@@ -5,7 +5,6 @@ import { CONTRACT_ADDRESSES } from './addresses';
 
 // Import contract ABIs
 import DecentralizedOracleABI from './abis/DecentralizedOracle.json';
-import SmartTrustABI from './abis/SmartTrust.json';
 import TrustABI from './abis/Trust.json';
 import BeneficiaryManagerABI from './abis/BeneficiaryManager.json';
 import TimelockABI from './abis/Timelock.json';
@@ -147,7 +146,7 @@ class ContractService {
     }
 
     try {
-      // The factory creates a new SmartTrust contract
+      // The factory creates a new SmartTrust contract (ERC721 version)
       const tx = await this.contracts.smartTrustFactory.createTrustContract();
       const receipt = await tx.wait();
 
@@ -159,10 +158,24 @@ class ContractService {
         throw new Error("Could not find new trust address in transaction receipt");
       }
 
+      // This is the ABI for the ERC721 SmartTrust contract created by the factory
+      const ERC721SmartTrustABI = [
+        {
+          "inputs": [
+            { "internalType": "address", "name": "_beneficiary", "type": "address" },
+            { "internalType": "string", "name": "_terms", "type": "string" }
+          ],
+          "name": "createTrust",
+          "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ];
+
       // Now, create an instance of the new SmartTrust contract
       const newTrustContract = new ethers.Contract(
         newTrustAddress,
-        SmartTrustABI,
+        ERC721SmartTrustABI,
         this.signer
       );
 

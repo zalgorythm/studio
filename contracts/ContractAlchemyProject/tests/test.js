@@ -6,7 +6,7 @@ describe("SmartTrustFactory", function () {
   it("Should deploy a new SmartTrust contract", async function () {
     const SmartTrustFactory = await ethers.getContractFactory("SmartTrustFactory");
     const smartTrustFactory = await SmartTrustFactory.deploy();
-    await smartTrustFactory.deployed();
+    await smartTrustFactory.waitForDeployment();
 
     const deployTrustTx = await smartTrustFactory.createTrustContract();
     await deployTrustTx.wait();
@@ -14,7 +14,7 @@ describe("SmartTrustFactory", function () {
     const deployedTrusts = await smartTrustFactory.getDeployedTrusts();
     expect(deployedTrusts.length).to.equal(1);
 
-    const SmartTrust = await ethers.getContractFactory("SmartTrust");
+    const SmartTrust = await ethers.getContractFactory("contracts/ContractAlchemyProject/contracts/SmartTrustFactory.sol:SmartTrust");
     const smartTrust = await SmartTrust.attach(deployedTrusts[0]);
     
     const [owner] = await ethers.getSigners();

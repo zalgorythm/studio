@@ -20,7 +20,7 @@ contract SmartTrust is ERC721, Ownable, ReentrancyGuard {
     event TrustRevoked(uint256 trustId, address beneficiary);
     event TrustTransferred(uint256 trustId, address from, address to);
 
-    constructor() ERC721("SmartTrust", "STRST") Ownable(msg.sender) {}
+    constructor(address initialOwner) ERC721("SmartTrust", "STRST") Ownable(initialOwner) {}
 
     function createTrust(address _beneficiary, string memory _terms) public onlyOwner returns (uint256) {
         _trustCount++;
@@ -62,7 +62,7 @@ contract SmartTrustFactory {
     event TrustDeployed(address trustAddress);
 
     function createTrustContract() public returns (address) {
-        SmartTrust newTrust = new SmartTrust();
+        SmartTrust newTrust = new SmartTrust(msg.sender);
         deployedTrusts.push(address(newTrust));
         emit TrustDeployed(address(newTrust));
         return address(newTrust);

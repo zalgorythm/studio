@@ -27,6 +27,10 @@ const OptimizeClauseInputSchema = z.object({
     .string()
     .optional()
     .describe('An existing clause that needs to be optimized.'),
+  documentContent: z
+    .string()
+    .optional()
+    .describe('The full text content of an existing trust document for context.'),
 });
 export type OptimizeClauseInput = z.infer<typeof OptimizeClauseInputSchema>;
 
@@ -48,15 +52,22 @@ const prompt = ai.definePrompt({
   output: {schema: OptimizeClauseOutputSchema},
   prompt: `You are an expert legal assistant specializing in trust law. Your goal is to suggest and optimize clauses for trusts based on the trust type, asset type, specific needs, and existing clause (if any).
 
+If an existing trust document is provided, use it as the primary context for your suggestions.
+
 Trust Type: {{{trustType}}}
 Asset Type: {{{assetType}}}
 Specific Needs: {{{specificNeeds}}}
-Existing Clause: {{{existingClause}}}
+{{#if existingClause}}
+Existing Clause to Optimize:
+{{{existingClause}}}
+{{/if}}
+{{#if documentContent}}
+Full Trust Document Context:
+{{{documentContent}}}
+{{/if}}
 
-Based on the above information, suggest an optimized clause for the trust and provide an explanation of why the clause is important and how it addresses the input. Be as specific and legally sound as possible.
-
-Optimized Clause:
-Explanation:`,
+Based on all the information provided, suggest an optimized clause for the trust and provide a detailed explanation of why the clause is important and how it addresses the user's input. Be as specific and legally sound as possible.
+`,
 });
 
 const optimizeClauseFlow = ai.defineFlow(

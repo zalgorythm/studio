@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Sparkles, Loader2, FileText, Lightbulb } from 'lucide-react';
+import { Sparkles, Loader2, FileText, Lightbulb, Upload, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -15,18 +15,22 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { handleOptimizeClause } from '@/app/actions';
 import type { OptimizeClauseOutput } from '@/ai/flows/clause-optimizer';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
 
 const OptimizeClauseInputSchema = z.object({
   trustType: z.string().min(1, 'Please select a trust type.'),
   assetType: z.string().min(1, 'Please select an asset type.'),
   specificNeeds: z.string().min(10, 'Please describe your specific needs (min. 10 characters).'),
   existingClause: z.string().optional(),
+  documentContent: z.string().optional(),
 });
 type OptimizeClauseInput = z.infer<typeof OptimizeClauseInputSchema>;
 
 export function ClauseOptimizer() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<OptimizeClauseOutput | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const form = useForm<OptimizeClauseInput>({
@@ -36,8 +40,41 @@ export function ClauseOptimizer() {
       assetType: '',
       specificNeeds: '',
       existingClause: '',
+      documentContent: '',
     },
   });
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type === 'text/plain') {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target?.result as string;
+          form.setValue('documentContent', content);
+          setFileName(file.name);
+        };
+        reader.readAsText(file);
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Invalid File Type',
+          description: 'Please upload a .txt file.',
+        });
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
+    }
+  };
+  
+  const handleRemoveFile = () => {
+    form.setValue('documentContent', '');
+    setFileName(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const onSubmit: SubmitHandler<OptimizeClauseInput> = async (data) => {
     setIsLoading(true);
@@ -65,7 +102,7 @@ export function ClauseOptimizer() {
         <CardHeader>
           <CardTitle className="font-headline text-2xl">Clause Optimizer</CardTitle>
           <CardDescription>
-            Leverage AI to craft and refine legally-sound clauses for your trust. Fill in the details below to get a customized suggestion.
+            Leverage AI to craft and refine legally-sound clauses for your trust. Fill in the details below or upload an existing document to get a customized suggestion.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -131,7 +168,7 @@ export function ClauseOptimizer() {
                       <Textarea
                         placeholder="e.g., Provide for a child with special needs, protect assets from creditors, ensure my digital art is passed to my niece..."
                         {...field}
-                        rows={4}
+                        rows={3}
                       />
                     </FormControl>
                     <FormMessage />
@@ -149,13 +186,53 @@ export function ClauseOptimizer() {
                       <Textarea
                         placeholder="Paste an existing clause here if you want to improve it."
                         {...field}
-                        rows={4}
+                        rows={3}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              <FormItem>
+                  <FormLabel>Upload Existing Document (Optional, .txt only)</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input
+                        type="file"
+                        id="file-upload"
+                        className="hidden"
+                        accept=".txt"
+                        onChange={handleFileChange}
+                        ref={fileInputRef}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById('file-upload')?.click()}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        {fileName ? 'Replace Document' : 'Upload Document'}
+                      </Button>
+                      {fileName && (
+                        <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                          <FileText className="h-4 w-4" />
+                          <span>{fileName}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={handleRemoveFile}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
 
               <Button type="submit" disabled={isLoading} className="w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90">
                 {isLoading ? (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,8 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { handleOptimizeClause } from '@/app/actions';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { handleOptimizeClause, handleGenerateSuggestions } from '@/app/actions';
 import type { OptimizeClauseOutput } from '@/ai/flows/clause-optimizer';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,8 @@ export function ClauseOptimizer() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<OptimizeClauseOutput | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -43,6 +45,31 @@ export function ClauseOptimizer() {
       documentContent: '',
     },
   });
+
+  const trustType = form.watch('trustType');
+  const assetType = form.watch('assetType');
+
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (trustType || assetType) {
+        setIsSuggestionsLoading(true);
+        const { data } = await handleGenerateSuggestions({ trustType, assetType });
+        if (data?.suggestions) {
+          setSuggestions(data.suggestions);
+        }
+        setIsSuggestionsLoading(false);
+      } else {
+        setSuggestions([]);
+      }
+    };
+
+    const debounceTimer = setTimeout(() => {
+      fetchSuggestions();
+    }, 500); // Debounce to avoid rapid firing
+
+    return () => clearTimeout(debounceTimer);
+  }, [trustType, assetType]);
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -171,6 +198,35 @@ export function ClauseOptimizer() {
                         rows={3}
                       />
                     </FormControl>
+                    <FormDescription>
+                      Need inspiration? Select a trust and asset type, and we'll suggest some starting points.
+                    </FormDescription>
+                    <div className="pt-2">
+                    {isSuggestionsLoading ? (
+                      <div className="flex gap-2">
+                        <Skeleton className="h-9 w-1/3" />
+                        <Skeleton className="h-9 w-1/3" />
+                        <Skeleton className="h-9 w-1/3" />
+                      </div>
+                    ) : (
+                      suggestions.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {suggestions.map((suggestion, i) => (
+                            <Button
+                              key={i}
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="text-xs"
+                              onClick={() => form.setValue('specificNeeds', suggestion, { shouldValidate: true })}
+                            >
+                              {suggestion}
+                            </Button>
+                          ))}
+                        </div>
+                      )
+                    )}
+                  </div>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -4,6 +4,7 @@ import { ClauseOptimizer } from '@/components/clause-optimizer';
 import { TrustOverview } from '@/components/trust-overview';
 import { Header } from '@/components/header';
 import { SmartContracts } from '@/components/smart-contracts';
+import { Documentation } from '@/components/documentation';
 
 export default function Home() {
   return (
@@ -14,6 +15,7 @@ export default function Home() {
           <div className="lg:col-span-2 space-y-8">
             <ClauseOptimizer />
             <SmartContracts />
+            <Documentation />
           </div>
           <div className="lg:col-span-1">
             <TrustOverview />

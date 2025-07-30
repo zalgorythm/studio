@@ -27,7 +27,6 @@ interface ContractInfo {
 interface Contracts {
   decentralizedOracle: ethers.Contract | null;
   smartTrust: ethers.Contract | null;
-  trust: ethers.Contract | null;
   beneficiaryManager: ethers.Contract | null;
   timelock: ethers.Contract | null;
   smartTrustFactory: ethers.Contract | null;
@@ -40,7 +39,6 @@ class ContractService {
   private contracts: Contracts = {
     decentralizedOracle: null,
     smartTrust: null,
-    trust: null,
     beneficiaryManager: null,
     timelock: null,
     smartTrustFactory: null
@@ -77,12 +75,6 @@ class ContractService {
     this.contracts.smartTrustFactory = new ethers.Contract(
       CONTRACT_ADDRESSES.SmartTrustFactory,
       SmartTrustFactoryABI,
-      this.signer
-    );
-
-    this.contracts.trust = new ethers.Contract(
-      CONTRACT_ADDRESSES.Trust,
-      TrustABI,
       this.signer
     );
 
@@ -134,8 +126,9 @@ class ContractService {
     return this.contracts.smartTrustFactory;
   }
 
-  public getTrust(): ethers.Contract | null {
-    return this.contracts.trust;
+  public getTrustContract(address: string): ethers.Contract | null {
+    if (!this.signer) return null;
+    return new ethers.Contract(address, TrustABI, this.signer);
   }
 
   public getBeneficiaryManager(): ethers.Contract | null {
@@ -154,23 +147,45 @@ class ContractService {
     }
 
     try {
-      const tx = await this.contracts.smartTrustFactory.createTrust(beneficiary, terms);
+      // The factory creates a new SmartTrust contract
+      const tx = await this.contracts.smartTrustFactory.createTrustContract();
       const receipt = await tx.wait();
-      return receipt.hash;
+
+      // Find the event log for TrustDeployed to get the new contract address
+      const event = receipt.logs.find((log: any) => log.fragment.name === 'TrustDeployed');
+      const newTrustAddress = event?.args[0];
+
+      if (!newTrustAddress) {
+        throw new Error("Could not find new trust address in transaction receipt");
+      }
+
+      // Now, create an instance of the new SmartTrust contract
+      const newTrustContract = new ethers.Contract(
+        newTrustAddress,
+        SmartTrustABI,
+        this.signer
+      );
+
+      // Call the createTrust function on the new SmartTrust contract
+      const trustTx = await newTrustContract.createTrust(beneficiary, terms);
+      const trustReceipt = await trustTx.wait();
+
+      return trustReceipt.hash;
     } catch (error) {
       console.error('Error creating trust:', error);
       return null;
     }
   }
 
-  public async addAsset(description: string, value: number): Promise<string | null> {
-    if (!this.contracts.trust) {
+  public async addAsset(trustAddress: string, description: string, value: number): Promise<string | null> {
+    const trustContract = this.getTrustContract(trustAddress);
+    if (!trustContract) {
       console.error('Trust contract not initialized');
       return null;
     }
 
     try {
-      const tx = await this.contracts.trust.addAsset(description, value);
+      const tx = await trustContract.addAsset(description, value);
       const receipt = await tx.wait();
       return receipt.hash;
     } catch (error) {
@@ -179,14 +194,15 @@ class ContractService {
     }
   }
 
-  public async addBeneficiary(address: string, name: string, sharePercentage: number): Promise<string | null> {
-    if (!this.contracts.trust) {
+  public async addBeneficiary(trustAddress: string, address: string, name: string, sharePercentage: number): Promise<string | null> {
+    const trustContract = this.getTrustContract(trustAddress);
+    if (!trustContract) {
       console.error('Trust contract not initialized');
       return null;
     }
 
     try {
-      const tx = await this.contracts.trust.addBeneficiary(address, name, sharePercentage);
+      const tx = await trustContract.addBeneficiary(address, name, sharePercentage);
       const receipt = await tx.wait();
       return receipt.hash;
     } catch (error) {
@@ -195,14 +211,15 @@ class ContractService {
     }
   }
 
-  public async getTrustDetails(trustId: number): Promise<any> {
-    if (!this.contracts.trust) {
+  public async getTrustDetails(trustAddress: string, trustId: number): Promise<any> {
+    const trustContract = this.getTrustContract(trustAddress);
+    if (!trustContract) {
       console.error('Trust contract not initialized');
       return null;
     }
 
     try {
-      const details = await this.contracts.trust.getTrustDetails(trustId);
+      const details = await trustContract.getTrustDetails(trustId);
       return {
         beneficiary: details[0],
         terms: details[1],
@@ -214,14 +231,15 @@ class ContractService {
     }
   }
 
-  public async getAssetCount(): Promise<number | null> {
-    if (!this.contracts.trust) {
+  public async getAssetCount(trustAddress: string): Promise<number | null> {
+    const trustContract = this.getTrustContract(trustAddress);
+    if (!trustContract) {
       console.error('Trust contract not initialized');
       return null;
     }
 
     try {
-      const count = await this.contracts.trust.getAssetCount();
+      const count = await trustContract.getAssetCount();
       return parseInt(count);
     } catch (error) {
       console.error('Error getting asset count:', error);
@@ -229,17 +247,33 @@ class ContractService {
     }
   }
 
-  public async getBeneficiaryCount(): Promise<number | null> {
-    if (!this.contracts.trust) {
+  public async getBeneficiaryCount(trustAddress: string): Promise<number | null> {
+    const trustContract = this.getTrustContract(trustAddress);
+    if (!trustContract) {
       console.error('Trust contract not initialized');
       return null;
     }
 
     try {
-      const count = await this.contracts.trust.getBeneficiaryCount();
+      const count = await trustContract.getBeneficiaryCount();
       return parseInt(count);
     } catch (error) {
       console.error('Error getting beneficiary count:', error);
+      return null;
+    }
+  }
+
+  public async getDeployedTrusts(): Promise<string[] | null> {
+    if (!this.contracts.smartTrustFactory) {
+      console.error('SmartTrustFactory contract not initialized');
+      return null;
+    }
+
+    try {
+      const trusts = await this.contracts.smartTrustFactory.getDeployedTrusts();
+      return trusts;
+    } catch (error) {
+      console.error('Error getting deployed trusts:', error);
       return null;
     }
   }

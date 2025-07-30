@@ -26,6 +26,8 @@ export function ContractInteraction() {
     assetCount: 0,
     beneficiaryCount: 0
   });
+  const [deployedTrusts, setDeployedTrusts] = useState<string[]>([]);
+  const [selectedTrust, setSelectedTrust] = useState<string>('');
 
   const contractService = ContractService.getInstance();
 
@@ -33,10 +35,23 @@ export function ContractInteraction() {
     const init = async () => {
       await contractService.init();
       setIsConnected(contractService.isConnected());
+      if (contractService.isConnected()) {
+        fetchDeployedTrusts();
+      }
     };
     
     init();
   }, []);
+
+  const fetchDeployedTrusts = async () => {
+    const trusts = await contractService.getDeployedTrusts();
+    if (trusts) {
+      setDeployedTrusts(trusts);
+      if (trusts.length > 0) {
+        setSelectedTrust(trusts[0]);
+      }
+    }
+  };
 
   const connectWallet = async () => {
     setConnecting(true);
@@ -49,6 +64,7 @@ export function ContractInteraction() {
           title: "Wallet Connected",
           description: "You have successfully connected your wallet.",
         });
+        fetchDeployedTrusts();
       } else {
         toast({
           title: "Connection Failed",
@@ -76,6 +92,7 @@ export function ContractInteraction() {
           title: "Trust Created",
           description: `Transaction hash: ${txHash.substring(0, 20)}...`,
         });
+        fetchDeployedTrusts();
       } else {
         toast({
           title: "Creation Failed",
@@ -93,8 +110,16 @@ export function ContractInteraction() {
   };
 
   const handleAddAsset = async () => {
+    if (!selectedTrust) {
+      toast({
+        title: "No Trust Selected",
+        description: "Please select a trust to add an asset to.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
-      const txHash = await contractService.addAsset(trustData.assetDescription, trustData.assetValue);
+      const txHash = await contractService.addAsset(selectedTrust, trustData.assetDescription, trustData.assetValue);
       
       if (txHash) {
         toast({
@@ -121,8 +146,17 @@ export function ContractInteraction() {
   };
 
   const handleAddBeneficiary = async () => {
+    if (!selectedTrust) {
+      toast({
+        title: "No Trust Selected",
+        description: "Please select a trust to add a beneficiary to.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       const txHash = await contractService.addBeneficiary(
+        selectedTrust,
         trustData.beneficiaryAddress, 
         trustData.beneficiaryName, 
         trustData.sharePercentage
@@ -153,8 +187,9 @@ export function ContractInteraction() {
   };
 
   const refreshContractInfo = async () => {
-    const assetCount = await contractService.getAssetCount();
-    const beneficiaryCount = await contractService.getBeneficiaryCount();
+    if (!selectedTrust) return;
+    const assetCount = await contractService.getAssetCount(selectedTrust);
+    const beneficiaryCount = await contractService.getBeneficiaryCount(selectedTrust);
     
     setContractInfo({
       assetCount: assetCount || 0,
@@ -210,6 +245,24 @@ export function ContractInteraction() {
                 </CardContent>
               </Card>
               
+              {deployedTrusts.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="selectedTrust">Select a Trust</Label>
+                  <select
+                    id="selectedTrust"
+                    value={selectedTrust}
+                    onChange={(e) => setSelectedTrust(e.target.value)}
+                    className="w-full p-2 border rounded"
+                  >
+                    {deployedTrusts.map((trust) => (
+                      <option key={trust} value={trust}>
+                        {trust}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <Card>
                 <CardHeader>
                   <CardTitle>Add Asset</CardTitle>
@@ -234,7 +287,7 @@ export function ContractInteraction() {
                       placeholder="Enter asset value"
                     />
                   </div>
-                  <Button onClick={handleAddAsset}>Add Asset</Button>
+                  <Button onClick={handleAddAsset} disabled={!selectedTrust}>Add Asset</Button>
                 </CardContent>
               </Card>
               
@@ -271,7 +324,7 @@ export function ContractInteraction() {
                       placeholder="Enter share percentage"
                     />
                   </div>
-                  <Button onClick={handleAddBeneficiary}>Add Beneficiary</Button>
+                  <Button onClick={handleAddBeneficiary} disabled={!selectedTrust}>Add Beneficiary</Button>
                 </CardContent>
               </Card>
               
@@ -288,7 +341,7 @@ export function ContractInteraction() {
                     <Label>Beneficiary Count</Label>
                     <div className="text-2xl font-bold">{contractInfo.beneficiaryCount}</div>
                   </div>
-                  <Button onClick={refreshContractInfo}>Refresh Info</Button>
+                  <Button onClick={refreshContractInfo} disabled={!selectedTrust}>Refresh Info</Button>
                 </CardContent>
               </Card>
             </div>

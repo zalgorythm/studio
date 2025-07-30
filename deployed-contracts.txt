@@ -1,0 +1,9 @@
+Deployed Contract Addresses:
+
+1. DecentralizedOracle: 0x8721429BF696B0052F8247DAE704CCf0BE3aDA64
+2. SmartTrustFactory: 0x1b48eC3EB63333F19b9493556487833c04f1F429
+3. Trust: 0xc6d4A6F1D277a75Cb164d47d1066553ef807007E
+4. BeneficiaryManager: 0x774761eDdC7e13933E595a74Ca57d675a78Cb1B8
+5. Timelock: 0x9f47135AB4d325461544Ffe1b3fC8DE751a0EBA1
+
+Deployment completed successfully!

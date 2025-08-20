@@ -88,6 +88,13 @@ class ContractService {
       TimelockABI,
       this.signer
     );
+
+    // Initialize the main Trust contract
+    this.contracts.smartTrust = new ethers.Contract(
+      CONTRACT_ADDRESSES.Trust,
+      TrustABI,
+      this.signer
+    );
   }
 
   public async connectWallet(): Promise<boolean> {
@@ -123,6 +130,10 @@ class ContractService {
 
   public getSmartTrustFactory(): ethers.Contract | null {
     return this.contracts.smartTrustFactory;
+  }
+
+  public getTrust(): ethers.Contract | null {
+    return this.contracts.smartTrust;
   }
 
   public getTrustContract(address: string): ethers.Contract | null {
